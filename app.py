@@ -40,6 +40,14 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
+results = session.query(Gardens).all()
+print(results)
+
+if len(results) == 0:  # Write code somewhere to make sure people can't delete "no garden".
+    no_garden = Gardens(name="no garden", notes="These plants have no garden.")
+    session.add(no_garden)
+    session.commit()
+
 
 @app.route("/gardens", methods=["GET"])
 def all_gardens():
@@ -68,8 +76,9 @@ def create_plant():
     category = request.form["category"]
     location = request.form["location"]
     year = request.form["year"]
-    notes = request.form["notes"] # how do I add the garden id as foreign key?
-    new_plant = Plants(name=name, common_name=common_name, category=category, location=location, year=year, notes=notes)
+    notes = request.form["notes"]
+    garden_id = request.form["garden_id"]# how do I add the garden id as foreign key?
+    new_plant = Plants(name=name, common_name=common_name, category=category, location=location, year=year, notes=notes, garden_id=garden_id)
     session.add(new_plant)
     session.commit()
     return ""
@@ -103,7 +112,11 @@ def update_plant(plant_id):
 @app.route("/gardens/search", methods=["POST"])
 def search_gardens():
     garden_id = request.form["id"]
-    results = session.query(Gardens).filter(Gardens.id == garden_id)
+    garden_name = request.form["garden"]
+    if garden_id != "":
+        results = session.query(Gardens).filter(Gardens.id == garden_id)
+    elif garden_name != "":
+        results = session.query(Gardens).filter(Gardens.name == garden_name)
     garden_list = []
     for result in results:
         garden = {"id": result.id, "name": result.name, "notes": result.notes}
